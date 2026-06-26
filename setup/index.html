@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>FlightTrack Setup</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="setup-card">
+        <header class="setup-header">
+            <h1>FlightTrack</h1>
+            <p>System Initialisation & Permissions</p>
+        </header>
+
+        <div class="step-container" id="step-identity">
+            <div class="step-badge">1</div>
+            <div class="step-content">
+                <h3>Pilot Profile</h3>
+                <div class="form-group">
+                    <input type="text" id="username" placeholder="Enter Callsign (e.g., N12345)" autocomplete="off">
+                </div>
+            </div>
+            <div class="status-indicator"></div>
+        </div>
+
+        <div class="step-container" id="step-location">
+            <div class="step-badge">2</div>
+            <div class="step-content">
+                <h3>Telemetry & GNSS</h3>
+                <button id="btn-location" class="action-btn">Grant Location Access</button>
+            </div>
+            <div class="status-indicator"></div>
+        </div>
+
+        <button id="btn-finish" class="finish-btn" disabled>
+            <span>Finish Setup & Launch Map</span>
+        </button>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+
+</html>
