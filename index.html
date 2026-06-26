@@ -7,12 +7,12 @@
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 
     <script>
-        if (window.matchMedia('(display-mode: standalone)').matches
-            || window.navigator.standalone === true) {
+        if (localStorage.getItem('flighttrack_setup_complete') !== 'true' && (window.matchMedia('(display-mode: standalone)').matches
+            || window.navigator.standalone === true)) {
             // Only enforce setup configuration if they are inside the installed app
-            if (localStorage.getItem('flighttrack_setup_complete') !== 'true') {
-                window.location.replace('./setup/setup.html');
-            }
+
+            window.location.replace('./setup/setup.html');
+
         }
     </script>
     <title>Aviation PWA Map</title>
