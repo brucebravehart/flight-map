@@ -37,6 +37,25 @@
             <div class="status-indicator"></div>
         </div>
 
+        <div class="step-container" id="step-charts">
+            <div class="step-badge">3</div>
+            <div class="step-content">
+                <h3>Aviation Charts (Optional)</h3>
+                <p style="font-size: 11px; color: #8e8e93; margin-bottom: 8px;">Import PDF terminal charts or
+                    sectionals.</p>
+
+                <label for="setup-pdf-input" class="action-btn" style="display: inline-block; text-align: center;">
+                    Select PDF Charts
+                </label>
+                <input type="file" id="setup-pdf-input" accept="application/pdf" multiple style="display: none;" />
+
+                <ul id="chart-list"
+                    style="list-style: none; margin-top: 10px; padding: 0; font-size: 13px; color: #00ff00; text-align: left;">
+                </ul>
+            </div>
+            <div class="status-indicator"></div>
+        </div>
+
         <button id="btn-finish" class="finish-btn" disabled>
             <span>Finish Setup & Launch Map</span>
         </button>
