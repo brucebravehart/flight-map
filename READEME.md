@@ -24,8 +24,13 @@ If you want to use it as a PWA, on iOS go to "share" > "more" > "add to home scr
 - [ ] Notepad system
 - [ ] PDF Overlay
 - [ ] Waypoint system
+- [ ] Phase System (Different Views and overlays depending on where you are in the flight)
 - [ ] Mass & Balance Calculator
 - [ ] Air Spaces
 - [ ] DABS Data
 - [ ] Traffic (ADS-B Exchange, other sites)
 - [ ] Tutorial Page
+
+### Design Conception
+
+Have a bar below to swipe (or tap) to switch between phases of the flight. Note area is either over under with the map on a seperate pane.
