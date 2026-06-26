@@ -1,0 +1,56 @@
+body,
+html {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+  /* Uses native iOS system font tracking */
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+#map {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+#ui-layer {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  z-index: 10;
+  display: flex;
+  gap: 10px;
+  /* Allows user touches to pass straight through transparent dead-zones to the map layer underneath */
+  pointer-events: none;
+}
+
+.btn {
+  background: rgba(30, 30, 30, 0.85);
+  color: #00ff00;
+  border: 1px solid #00ff00;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  pointer-events: auto;
+
+  /* Enhances PWA performance by eliminating standard double-tap delay in iOS Safari */
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.btn:active {
+  background: #00ff00;
+  color: #000;
+}
+
+#file-input {
+  display: none;
+}
