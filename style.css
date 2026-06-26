@@ -16,6 +16,7 @@ html {
 .app-viewport {
   width: 100vw;
   height: 100vh;
+  height: -webkit-fill-available;
   display: flex;
   flex-direction: column;
 }
@@ -92,10 +93,10 @@ html {
 
 /* Split Notes Desk Container */
 .notes-panel {
-  background: #111;
+  background: #1c1c1e;
   display: flex;
   flex-direction: column;
-  height: 40vh; /* Takes up half the screen space when active */
+  height: 40vh;
   transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
   /*position: relative;*/
@@ -120,13 +121,14 @@ html {
 
 /* Persistent Footer Bar Actions */
 .footer-navigation {
-  height: 60px;
+  height: calc(60px + env(safe-area-inset-bottom, 0px));
   background: #1c1c1e;
   border-top: 1px solid #3a3a3c;
   display: flex;
   justify-content: space-around;
-  align-items: center;
+  align-items: flex-start;
   width: 100%;
+  padding-top: 10px;
   padding-bottom: env(safe-area-inset-bottom, 0px);
   box-sizing: border-box;
 }
