@@ -62,5 +62,5 @@ elements.btnFinish.addEventListener('click', () => {
     localStorage.setItem('flighttrack_username', elements.username.value.trim());
 
     // Pull out of setup folder and move back to main index application root
-    window.location.replace('../index.html');
+    window.location.replace('./../index.html');
 });
