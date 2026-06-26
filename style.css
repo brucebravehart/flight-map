@@ -37,7 +37,7 @@ html {
 
 #ui-layer {
   position: absolute;
-  top: 20px;
+  top: calc(env(safe-area-inset-top, 0px) + 15px);
   right: 20px;
   z-index: 10;
   display: flex;
@@ -95,13 +95,14 @@ html {
   background: #111;
   display: flex;
   flex-direction: column;
-  height: 50vh; /* Takes up half the screen space when active */
+  height: 40vh; /* Takes up half the screen space when active */
   transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
+  overflow: hidden;
+  /*position: relative;*/
 }
 
 .notes-panel.collapsed {
-  height: 60px; /* Tall enough only to cleanly show the navigation footer actions */
+  height: 0px;
 }
 
 .notes-panel textarea {
@@ -126,6 +127,8 @@ html {
   justify-content: space-around;
   align-items: center;
   width: 100%;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  box-sizing: border-box;
 }
 
 .nav-arrow {
@@ -135,13 +138,17 @@ html {
   font-size: 24px;
   cursor: pointer;
   padding: 10px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
 }
 
 /* Navigation System Overlay Panel */
 .nav-drawer {
   position: fixed;
   top: 0;
-  right: -280px;
+  right: -400px;
   width: 280px;
   height: 100vh;
   background-color: rgba(28, 28, 30, 0.95);
@@ -156,7 +163,7 @@ html {
 }
 
 .nav-drawer.open {
-  transform: translateX(-280px);
+  transform: translateX(-400px);
 }
 
 .drawer-header {
