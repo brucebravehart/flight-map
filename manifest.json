@@ -5,12 +5,12 @@
   "categories":[],
   "icons": [
     {
-      "src": "icon-192.png",
+      "src": "./img/icon192.png",
       "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "icon-512.png",
+      "src": "/img/icon512.png",
       "type": "image/png",
       "sizes": "512x512"
     }
@@ -22,13 +22,13 @@
   "display_override": ["fullscreen", "minimal-ui"],
   "orientation": "any",
   "scope": "/",
-  "scope_extensions": null,
-  "shortcuts":{
+  "scope_extensions": [],
+  "shortcuts":[{
       "name": "Open App",
       "url": "./index.html",
       "description": "Open FlightTrack"
-    },
+    }],
   "share_target":null,
-  "related_applications":null,
-  "prefer_related_applications":null
+  "related_applications":[],
+  "prefer_related_applications":false
 }

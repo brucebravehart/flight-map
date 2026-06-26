@@ -2,60 +2,88 @@ export class MapManager {
     constructor(containerId) {
         this.map = new maplibregl.Map({
             container: containerId,
-            // Pass the OpenFreeMap style URL directly here
             style: 'https://tiles.openfreemap.org/styles/bright',
-            center: [-122.4194, 37.7749], // San Francisco coordinates
-            zoom: 14, // Zoom in closer to see houses, roads, and airport layouts
-            maxTileCacheSize: 50 // Keep memory optimized for iOS Safari
+            center: [8.541, 47.374], // Zurich
+            zoom: 14,
+            maxTileCacheSize: 50
         });
-        this.aircraftCoordinates = [-122.4194, 37.7749];
+
+        this.aircraftCoordinates = [8.541, 47.374];
         this.aircraftHeading = 0;
         this.iconConfig = {
             color: '#00ff00',
             size: 30,
-            shape: 'plane' // 'plane' or 'arrow'
+            shape: 'plane'
         };
+
+        this.sourceId = 'aircraft-source';
+        this.layerId = 'aircraft-layer';
+        this.imageId = 'aircraft-icon';
+
+        // Set up the temporary canvas helper
+        this.canvasElement = document.createElement('canvas');
+        this.canvasElement.width = 64;
+        this.canvasElement.height = 64;
 
         this.map.on('load', () => this._initAircraftLayer());
     }
 
     _initAircraftLayer() {
-        // Create an invisible canvas to programmatically draw our dynamic aviation symbol
-        this.canvasSourceId = 'aircraft-source';
-        this.canvasElement = document.createElement('canvas');
-        this.canvasElement.width = 64;
-        this.canvasElement.height = 64;
+        // 1. Generate the icon graphic on our canvas
         this._drawAircraftIcon();
 
-        // Register custom canvas source with MapLibre
-        this.map.addSource(this.canvasSourceId, {
-            type: 'canvas',
-            canvas: this.canvasElement,
-            coordinates: this._getSquareBounds(this.aircraftCoordinates, 0.01),
-            animate: false
+        // 2. Add the canvas as a re-usable map image asset
+        this.map.addImage(this.imageId, this.canvasElement);
+
+        // 3. Create a clean GeoJSON Point source for the aircraft tracking
+        this.map.addSource(this.sourceId, {
+            type: 'geojson',
+            data: {
+                type: 'FeatureCollection',
+                features: [{
+                    type: 'Feature',
+                    geometry: {
+                        type: 'Point',
+                        coordinates: this.aircraftCoordinates
+                    },
+                    properties: {
+                        heading: this.aircraftHeading
+                    }
+                }]
+            }
         });
 
+        // 4. Create a Symbol layer that anchors the icon and handles rotation
         this.map.addLayer({
-            id: 'aircraft-layer',
-            type: 'raster',
-            source: this.canvasSourceId
+            id: this.layerId,
+            type: 'symbol',
+            source: this.sourceId,
+            layout: {
+                'icon-image': this.imageId,
+                'icon-size': 1,
+                'icon-allow-overlap': true,
+                'icon-ignore-placement': true,
+                // Tell MapLibre to rotate the icon based on our GeoJSON feature's property
+                'icon-rotate': ['get', 'heading'],
+                'icon-rotation-alignment': 'map' // Keeps heading aligned with True North
+            }
         });
     }
 
-    // Redraws the dynamic icon canvas based on state
     _drawAircraftIcon() {
         const ctx = this.canvasElement.getContext('2d');
         ctx.clearRect(0, 0, 64, 64);
         ctx.save();
         ctx.translate(32, 32);
-        ctx.rotate((this.aircraftHeading * Math.PI) / 180);
+
+        // Note: Removed context rotation here because MapLibre's symbol layer 
+        // will handle rotation via the 'icon-rotate' property dynamically.
 
         ctx.fillStyle = this.iconConfig.color;
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 2;
 
         if (this.iconConfig.shape === 'plane') {
-            // Simple geometric Jet representation
             ctx.beginPath();
             ctx.moveTo(0, -25);  // Nose
             ctx.lineTo(5, -10);  // Cockpit
@@ -73,7 +101,6 @@ export class MapManager {
             ctx.fill();
             ctx.stroke();
         } else {
-            // General Aviation Style Arrow Track symbol
             ctx.beginPath();
             ctx.moveTo(0, -25);
             ctx.lineTo(20, 15);
@@ -88,36 +115,38 @@ export class MapManager {
 
     // High performance UI update loop
     updateAircraft(lng, lat, heading) {
-        if (!this.map.getSource(this.canvasSourceId)) return;
+        const source = this.map.getSource(this.sourceId);
+        if (!source) return;
 
-        this.aircraftCoordinates[0] = lng;
-        this.aircraftCoordinates[1] = lat;
+        this.aircraftCoordinates = [lng, lat];
         this.aircraftHeading = heading;
 
-        this._drawAircraftIcon();
-
-        // Reposition the canvas footprint on the WebGL globe
-        const newBounds = this._getSquareBounds(this.aircraftCoordinates, 0.01);
-        this.map.getSource(this.canvasSourceId).setCoordinates(newBounds);
+        // Efficiently update just the data without forcing redraws of the underlying layout
+        source.setData({
+            type: 'FeatureCollection',
+            features: [{
+                type: 'Feature',
+                geometry: {
+                    type: 'Point',
+                    coordinates: this.aircraftCoordinates
+                },
+                properties: {
+                    heading: this.aircraftHeading
+                }
+            }]
+        });
     }
 
     setAircraftStyle(shape, color) {
         this.iconConfig.shape = shape;
         this.iconConfig.color = color;
+
+        // Redraw the canvas
         this._drawAircraftIcon();
-        // Force MapLibre to update the rendered source layer 
-        this.updateAircraft(this.aircraftCoordinates[0], this.aircraftCoordinates[1], this.aircraftHeading);
+
+        // Update the internal image reference texture inside MapLibre
+        if (this.map.hasImage(this.imageId)) {
+            this.map.updateImage(this.imageId, this.canvasElement);
+        }
     }
-
-    // Helper math to ground canvas relative to GPS
-    _getSquareBounds(center, size) {
-        return [
-            [center[0] - size, center[1] + size], // Top Left
-            [center[0] + size, center[1] + size], // Top Right
-            [center[0] + size, center[1] - size], // Bottom Right
-            [center[0] - size, center[1] - size]  // Bottom Left
-        ];
-    }
-
-
 }

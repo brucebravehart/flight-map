@@ -36,8 +36,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 4. Low-Overhead GPS Tracking Simulation Loop
     // Simulates an aircraft track vector walking Northwest
-    let lng = -122.4194;
-    let lat = 37.7749;
+    let lng = 47.374;
+    let lat = 8.541;
     let heading = 315;
 
     setInterval(() => {
