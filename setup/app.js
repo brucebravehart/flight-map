@@ -40,7 +40,7 @@ elements.btnLocation.addEventListener('click', () => {
         },
         (error) => {
             console.warn("Hardware Access Refused:", error);
-            alert("Location tracking is required for live telemetry maps.");
+            alert("Permission failed. Location tracking is required for live telemetry maps.");
         },
         { enableHighAccuracy: true }
     );
