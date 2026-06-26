@@ -12,6 +12,21 @@ html {
     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
+/* Base Fullscreen Application Manager */
+.app-viewport {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Top Section containing Map Instance */
+.map-wrapper {
+  flex: 1; /* Automatically absorbs remaining available screen space */
+  position: relative;
+  width: 100%;
+}
+
 #map {
   width: 100%;
   height: 100%;
@@ -22,10 +37,11 @@ html {
 
 #ui-layer {
   position: absolute;
-  bottom: 20px;
-  left: 20px;
+  top: 20px;
+  right: 20px;
   z-index: 10;
   display: flex;
+  justify-content: flex-start;
   gap: 10px;
   /* Allows user touches to pass straight through transparent dead-zones to the map layer underneath */
   pointer-events: none;
@@ -52,6 +68,145 @@ html {
   color: #000;
 }
 
-#file-input {
+/* Control Strip Hook */
+.panel-control-bar {
+  background: #1c1c1e;
+  border-top: 1px solid #3a3a3c;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 36px;
+  z-index: 20;
+}
+
+.panel-toggle-btn {
+  background: transparent;
+  border: none;
+  color: #00ff00;
+  font-weight: bold;
+  font-size: 13px;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+
+/* Split Notes Desk Container */
+.notes-panel {
+  background: #111;
+  display: flex;
+  flex-direction: column;
+  height: 50vh; /* Takes up half the screen space when active */
+  transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.notes-panel.collapsed {
+  height: 60px; /* Tall enough only to cleanly show the navigation footer actions */
+}
+
+.notes-panel textarea {
+  flex: 1;
+  background: #1c1c1e;
+  color: #fff;
+  border: none;
+  padding: 16px;
+  font-size: 16px;
+  resize: none;
+  outline: none;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+/* Persistent Footer Bar Actions */
+.footer-navigation {
+  height: 60px;
+  background: #1c1c1e;
+  border-top: 1px solid #3a3a3c;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  width: 100%;
+}
+
+.nav-arrow {
+  background: none;
+  border: none;
+  color: #00ff00;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 10px 40px;
+}
+
+/* Navigation System Overlay Panel */
+.nav-drawer {
+  position: fixed;
+  top: 0;
+  right: -280px;
+  width: 280px;
+  height: 100vh;
+  background-color: rgba(28, 28, 30, 0.95);
+  backdrop-filter: blur(10px);
+  border-left: 1px solid #00ff00;
+  box-shadow: -5px 0 25px rgba(0, 0, 0, 0.5);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  z-index: 9999;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nav-drawer.open {
+  transform: translateX(-280px);
+}
+
+.drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+#btn-menu-close {
+  background: none;
+  border: none;
+  color: #8e8e93;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.drawer-links {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.drawer-links a,
+.menu-placeholder-btn {
+  text-align: left;
+  background: none;
+  border: none;
+  color: #ffffff;
+  text-decoration: none;
+  padding: 14px 16px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.drawer-links a.active,
+.menu-placeholder-btn:active {
+  background-color: rgba(0, 255, 0, 0.1);
+  color: #00ff00;
+}
+
+.update-banner {
   display: none;
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  background: #1c1c1e;
+  border: 1px solid #00ff00;
+  padding: 15px;
+  border-radius: 8px;
+  z-index: 10000;
 }

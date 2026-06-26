@@ -20,6 +20,19 @@ body {
   user-select: none;
 }
 
+body,
+html {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: #fff;
+}
+
 /* Container Card */
 .setup-card {
   background-color: #1c1c1e;

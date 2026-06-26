@@ -7,32 +7,38 @@ document.addEventListener('DOMContentLoaded', async () => {
     const storage = new StorageManager();
     await storage.init();
 
-    // 2. Customizing icons on demand
-    let currentStyle = 'plane';
-    document.getElementById('btn-toggle-icon').addEventListener('click', () => {
-        currentStyle = currentStyle === 'plane' ? 'arrow' : 'plane';
-        const color = currentStyle === 'plane' ? '#00ff00' : '#ff00ff';
-        mapUI.setAircraftStyle(currentStyle, color);
+    // UI Selector Caches
+    const btnTogglePanel = document.getElementById('btn-toggle-panel');
+    const notesPanel = document.getElementById('notes-panel');
+    const menuToggleBtn = document.getElementById('btn-menu-toggle');
+    const menuCloseBtn = document.getElementById('btn-menu-close');
+    const navDrawer = document.getElementById('nav-drawer');
+
+    // Manage Toggle Action for the Note Section Expansion Matrix
+    btnTogglePanel.addEventListener('click', () => {
+        const isCollapsed = notesPanel.classList.toggle('collapsed');
+
+        if (isCollapsed) {
+            btnTogglePanel.textContent = "▲ Show Notes";
+        } else {
+            btnTogglePanel.textContent = "▼ Hide Notes";
+        } setTimeout(() => {
+            map.resize();
+        }, 320);
     });
 
-    // 3. Handling PDF File Upload Pipeline
-    document.getElementById('file-input').addEventListener('change', async (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        try {
-            // Save binary payload to offline DB
-            await storage.savePDF(file.name, file);
-            console.log(`Successfully stored ${file.name} to device local memory.`);
-
-            // To fetch later and parse into PDF.js:
-            // const pdfBlob = await storage.getPDF(file.name);
-            // const blobUrl = URL.createObjectURL(pdfBlob);
-
-        } catch (error) {
-            console.error(error);
-        }
+    menuToggleBtn.addEventListener('click', () => {
+        navDrawer.classList.add('open');
     });
+
+    menuCloseBtn.addEventListener('click', () => {
+        navDrawer.classList.remove('open');
+    });
+
+    // Structural placeholders for arrow behaviors
+    document.getElementById('nav-prev').addEventListener('click', () => console.log('Previous Track Action'));
+    document.getElementById('nav-next').addEventListener('click', () => console.log('Next Track Action'));
+
 
     // 4. Low-Overhead GPS Tracking Simulation Loop
     // Simulates an aircraft track vector walking Northwest
