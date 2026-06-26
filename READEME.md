@@ -17,3 +17,15 @@ Open the website:
 <a href="https://brucebravehart.github.io/flight-map/" target="_blank">
 
 If you want to use it as a PWA, on iOS go to "share" > "more" > "add to home screen"
+
+## Planned features
+
+- [ ] Options Page (All Documents, Document Configs, Configured Aircraft)
+- [ ] Notepad system
+- [ ] PDF Overlay
+- [ ] Waypoint system
+- [ ] Mass & Balance Calculator
+- [ ] Air Spaces
+- [ ] DABS Data
+- [ ] Traffic (ADS-B Exchange, other sites)
+- [ ] Tutorial Page
