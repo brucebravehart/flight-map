@@ -34,9 +34,52 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
+                let newWorker;
+
                 navigator.serviceWorker.register('./sw.js')
-                    .then(reg => console.log('Service Worker Registered Offline: ', reg.scope))
+                    .then(reg => {
+                        console.log('Service Worker Registered Offline: ', reg.scope);
+
+                        // 1. Check if there's already an update waiting in the background
+                        if (reg.waiting) {
+                            newWorker = reg.waiting;
+                            showUpdateBanner(newWorker);
+                        }
+
+                        // 2. Listen for future updates found while the app is running
+                        reg.addEventListener('updatefound', () => {
+                            const installingWorker = reg.installing;
+
+                            installingWorker.addEventListener('statechange', () => {
+                                // If the new worker finishes installing, it enters the 'waiting' state
+                                if (installingWorker.state === 'installed') {
+                                    if (navigator.serviceWorker.controller) {
+                                        newWorker = installingWorker;
+                                        showUpdateBanner(newWorker);
+                                    }
+                                }
+                            });
+                        });
+                    })
                     .catch(err => console.error('Service Worker Fault: ', err));
+
+                // 3. Listen for the controlling service worker changing to reload the page automatically
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    window.location.reload();
+                });
+            });
+        }
+
+        // Function to reveal UI banner and bind click event to the waiting worker
+        function showUpdateBanner(worker) {
+            const banner = document.getElementById('update-banner');
+            const updateBtn = document.getElementById('btn-apply-update');
+
+            banner.style.display = 'block'; // Make the hidden button visible
+
+            updateBtn.addEventListener('click', () => {
+                // Post the message to the service worker to execute self.skipWaiting()
+                worker.postMessage({ type: 'SKIP_WAITING' });
             });
         }
     </script>
@@ -50,6 +93,11 @@
         <button class="btn" id="btn-toggle-icon">Change Icon Style</button>
         <label class="btn" for="file-input">Import PDF Chart</label>
         <input type="file" id="file-input" accept="application/pdf" />
+        <div id="update-banner"
+            style="display: none; position: fixed; top: 20px; right: 20px; background: #1c1c1e; border: 1px solid #00ff00; padding: 15px; border-radius: 8px; z-index: 10000;">
+            <p style="margin: 0 0 10px 0; font-size: 14px; color: #fff;">App update available!</p>
+            <button id="btn-apply-update" class="btn" style="padding: 6px 12px; font-size: 12px;">Update Now</button>
+        </div>
     </div>
 
     <script type="module" src="app.js"></script>
