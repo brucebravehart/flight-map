@@ -1,6 +1,8 @@
 {
   "short_name": "FlightTrack",
   "name": "Aviation Flight Tracker PWA",
+  "description":"",
+  "categories":[],
   "icons": [
     {
       "src": "icon-192.png",
@@ -17,5 +19,16 @@
   "background_color": "#000000",
   "theme_color": "#000000",
   "display": "standalone",
-  "orientation": "any"
+  "display_override": ["fullscreen", "minimal-ui"],
+  "orientation": "any",
+  "scope": "/",
+  "scope_extensions": null,
+  "shortcuts":{
+      "name": "Open App",
+      "url": "./index.html",
+      "description": "Open FlightTrack"
+    },
+  "share_target":null,
+  "related_applications":null,
+  "prefer_related_applications":null
 }
