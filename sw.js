@@ -23,7 +23,7 @@ self.addEventListener('install', (event) => {
             return cache.addAll(ASSETS_TO_CACHE);
         })
     );
-    self.skipWaiting(); delete 
+    self.skipWaiting();
 });
 
 // 2. Activate Event: Clean old cache versions safely
