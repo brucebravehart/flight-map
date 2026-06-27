@@ -3,9 +3,9 @@ import { StorageManager } from './storageManager.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. Initialize Modules
-    const mapUI = new MapManager('map');
     const storage = new StorageManager();
     await storage.init();
+    const mapUI = new MapManager('map', storage);
 
     // UI Selector Caches
     const btnTogglePanel = document.getElementById('btn-toggle-panel');

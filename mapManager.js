@@ -1,5 +1,7 @@
+import { StorageManager } from './storageManager.js';
+
 export class MapManager {
-    constructor(containerId) {
+    constructor(containerId, storage) {
         this.map = new maplibregl.Map({
             container: containerId,
             style: 'https://tiles.openfreemap.org/styles/bright',
@@ -16,6 +18,7 @@ export class MapManager {
             shape: 'plane'
         };
 
+        this.storage = storage
         this.sourceId = 'aircraft-source';
         this.layerId = 'aircraft-layer';
         this.imageId = 'aircraft-icon';
@@ -25,15 +28,34 @@ export class MapManager {
         this.canvasElement.width = 64;
         this.canvasElement.height = 64;
 
-        this.map.on('load', () => this._initAircraftLayer());
+        const initializeFeatures = () => {
+            this._initAircraftLayer();
+            this._loadOverlays();
+        };
+
+        if (this.map.loaded()) {
+            // If cache made it load instantly, run it immediately
+            initializeFeatures();
+        } else {
+            // Otherwise wait for the thread event
+            this.map.on('load', initializeFeatures);
+        }
     }
 
     _initAircraftLayer() {
         // 1. Generate the icon graphic on our canvas
         this._drawAircraftIcon();
 
-        // 2. Add the canvas as a re-usable map image asset
-        this.map.addImage(this.imageId, this.canvasElement);
+        // 2. EXTRACT THE IMAGE DATA (Fixes the WebGL hanging/deadlock)
+        const ctx = this.canvasElement.getContext('2d');
+        // Read the exact 64x64 pixel square boundaries out of canvas RAM
+        const imgData = ctx.getImageData(0, 0, 64, 64);
+
+        // Pass the raw pixel data array instead of the canvas element container
+        if (this.map.hasImage(this.imageId)) {
+            this.map.removeImage(this.imageId); // Prevent collision crashes if re-initializing
+        }
+        this.map.addImage(this.imageId, imgData);
 
         // 3. Create a clean GeoJSON Point source for the aircraft tracking
         this.map.addSource(this.sourceId, {
@@ -149,4 +171,105 @@ export class MapManager {
             this.map.updateImage(this.imageId, this.canvasElement);
         }
     }
+
+    async _loadOverlays() {
+        const configList = [
+            {
+                filename: 'LS_ADINFO_0000_LSPV_VAC.pdf',
+                center: [7.413839695002798, 47.18153507188695], // [Lng, Lat] center of airport or chart
+                scale: 0.015,                // Bounding box span radius (degrees)
+                orientation: 0               // Rotation angle in degrees (Clockwise)
+            }
+        ];
+
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        for (const item of configList) {
+            try {
+                // 1. Calculate the 4 outer corner GPS coordinates from center, scale, and rotation
+                const finalCoordinates = this._calculateBoundingBox(item.center, item.scale, item.orientation);
+
+                // 2. Fetch the raw PDF Blob using the filename primary key
+                const pdfBlob = await this.storage.getPDF(item.filename);
+                if (!pdfBlob) {
+                    console.warn(`⚠️ Skipping static overlay: "${item.filename}" not found in local IndexedDB archive.`);
+                    continue;
+                }
+
+                // 3. Process PDF vectors into a raster image string completely offline
+                const arrayBuffer = await pdfBlob.arrayBuffer();
+                const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+                const pdf = await loadingTask.promise;
+                const page = await pdf.getPage(1);
+
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                const viewport = page.getViewport({ scale: 2.0 }); // High-res render scale
+
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+                await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+                const imageSrcUrl = canvas.toDataURL('image/png');
+
+                // 4. Inject into the MapLibre engine layers
+                const safeId = item.filename.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+                const sourceId = `src-${safeId}`;
+                const layerId = `lyr-${safeId}`;
+
+                this.map.addSource(sourceId, {
+                    type: 'image',
+                    url: imageSrcUrl,
+                    coordinates: finalCoordinates
+                });
+
+                this.map.addLayer({
+                    id: layerId,
+                    type: 'raster',
+                    source: sourceId,
+                    paint: {
+                        'raster-opacity': 0.70 // Slight transparency to keep background terrain visible
+                    }
+                });
+
+                console.log(`✅ Loaded static overlay layer for: ${item.filename}`);
+
+            } catch (overlayError) {
+                console.error(`❌ Failed processing overlay sequence for ${item.filename}:`, overlayError);
+            }
+        }
+
+    }
+
+    _calculateBoundingBox(center, scale, orientationDegrees) {
+        const [cx, cy] = center;
+        const rad = (orientationDegrees * Math.PI) / 180;
+
+        // Define unrotated local offset extents relative to center
+        const localCorners = [
+            [-scale, scale], // Top-Left
+            [scale, scale], // Top-Right
+            [scale, -scale], // Bottom-Right
+            [-scale, -scale]  // Bottom-Left
+        ];
+
+        // Apply 2D Rotation Matrix transformations onto geographic plane
+        return localCorners.map(([lx, ly]) => {
+            const rotatedX = lx * Math.cos(rad) - ly * Math.sin(rad);
+            const rotatedY = lx * Math.sin(rad) + ly * Math.cos(rad);
+
+            // Approximate coordinate adjustment scaling for latitude squish
+            const latCorrection = Math.cos((cy * Math.PI) / 180);
+
+            return [
+                cx + (rotatedX / latCorrection),
+                cy + rotatedY
+            ];
+        });
+    }
+
+
 }
+
+
+
+

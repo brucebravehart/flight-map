@@ -27,7 +27,8 @@ const ASSETS_TO_CACHE = [
     `${REPO_NAME}img/icon512.png`,
     // Third-party MapLibre CDN assets
     'https://unpkg.com/maplibre-gl@4.5.0/dist/maplibre-gl.css',
-    'https://unpkg.com/maplibre-gl@4.5.0/dist/maplibre-gl.js'
+    'https://unpkg.com/maplibre-gl@4.5.0/dist/maplibre-gl.js',
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'
 ];
 
 // 1. Install Event: Cache the App Shell
