@@ -1,8 +1,9 @@
 const CACHE_NAME = 'flight-tracker-v1';
-const VERSION = '0.0.14'
+const VERSION = '0.0.15'
 // Add all local assets you want instantly available offline
 const REPO_NAME = self.location.pathname.substring(0, location.pathname.lastIndexOf('/') + 1);
 console.log('Repo Name: ' + REPO_NAME)
+console.log('Version: ' + VERSION)
 
 const ASSETS_TO_CACHE = [
     REPO_NAME, // Caches the base path (github.io/projectname/)
