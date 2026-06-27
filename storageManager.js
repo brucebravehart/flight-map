@@ -51,6 +51,21 @@ export class StorageManager {
     }
 
     /**
+     * Saves or updates a map positioning layout config
+     * @param {Object} configRecord - Structural mapping config
+     */
+    async getChartConfig(configId) {
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction(['chart_configs'], 'readonly');
+            const store = transaction.objectStore('chart_configs');
+            const request = store.get(configId);
+
+            request.onsuccess = () => resolve(request.result ? request.result : null);
+            request.onerror = () => reject('Error fetching PDF from DB');
+        });
+    }
+
+    /**
      * Uses the 'by_pdf' index to quickly return ALL configurations belonging to a specific PDF
      * @param {string} pdfName - Primary key of the parent document
      */

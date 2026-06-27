@@ -173,26 +173,21 @@ export class MapManager {
     }
 
     async _loadOverlays() {
-        const configList = [
-            {
-                filename: 'LS_ADINFO_0000_LSPV_VAC.pdf',
-                center: [7.413839695002798, 47.18153507188695], // [Lng, Lat] center of airport or chart
-                scale: 3.0,                // Bounding box span radius (degrees)
-                orientation: 0               // Rotation angle in degrees (Clockwise)
-            }
-        ];
+
 
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-        for (const item of configList) {
+        for (const name of this.storage.getAllChartConifgNames()) {
             try {
+
+                const item = this.storage.getChartConfig(name)
                 // 1. Calculate the 4 outer corner GPS coordinates from center, scale, and rotation
                 const finalCoordinates = this._calculateBoundingBox(item.center, item.scale, item.orientation);
 
                 // 2. Fetch the raw PDF Blob using the filename primary key
-                const pdfBlob = await this.storage.getPDF(item.filename);
+                const pdfBlob = await this.storage.getPDF(item.pdf_name);
                 if (!pdfBlob) {
-                    console.warn(`⚠️ Skipping static overlay: "${item.filename}" not found in local IndexedDB archive.`);
+                    console.warn(`⚠️ Skipping static overlay: "${item.pdf_name}" not found in local IndexedDB archive.`);
                     continue;
                 }
 
@@ -231,10 +226,10 @@ export class MapManager {
                     }
                 });
 
-                console.log(`✅ Loaded static overlay layer for: ${item.filename}`);
+                console.log(`✅ Loaded static overlay layer for: ${item.pdf_name}`);
 
             } catch (overlayError) {
-                console.error(`❌ Failed processing overlay sequence for ${item.filename}:`, overlayError);
+                console.error(`❌ Failed processing overlay sequence for ${item.pdf_name}:`, overlayError);
             }
         }
 
