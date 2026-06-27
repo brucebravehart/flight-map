@@ -21,7 +21,10 @@ const ASSETS_TO_CACHE = [
     `${REPO_NAME}settings/app.js`,
     // images
     `${REPO_NAME}img/icon192.png`,
-    `${REPO_NAME}img/icon512.png`
+    `${REPO_NAME}img/icon512.png`,
+    // Third-party MapLibre CDN assets
+    'https://unpkg.com/maplibre-gl@4.5.0/dist/maplibre-gl.css',
+    'https://unpkg.com/maplibre-gl@4.5.0/dist/maplibre-gl.js'
 ];
 
 // 1. Install Event: Cache the App Shell
@@ -67,13 +70,34 @@ self.addEventListener('activate', (event) => {
 // 3. Fetch Event: Cache-First Strategy for offline capability
 self.addEventListener('fetch', (event) => {
     // Pass online API calls like OpenFreeMap directly through without locking them
-    if (event.request.url.includes('openfreemap.org')) {
+    /*if (event.request.url.includes('openfreemap.org')) {
         return;
-    }
+    }*/
 
     event.respondWith(
         caches.match(event.request).then((cachedResponse) => {
-            return cachedResponse || fetch(event.request);
+            if (cachedResponse) {
+                return cachedResponse;
+            }
+            return fetch(event.request).then((networkResponse) => {
+                // Check if it's a valid response (or an external CDN response)
+                if (!networkResponse || networkResponse.status !== 200) {
+                    return networkResponse;
+                }
+
+                // OPTIONAL: Dynamically cache new map tiles or files 
+                // encountered while browsing online
+                if (event.request.url.includes('unpkg.com')) {
+                    const responseToCache = networkResponse.clone();
+                    caches.open(CACHE_NAME).then((cache) => {
+                        cache.put(event.request, responseToCache);
+                    });
+                }
+
+                return networkResponse;
+            });
+        }).catch(() => {
+            // Optional: Handle complete offline fallbacks here if both network and cache fail
         })
     );
 });
