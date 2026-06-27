@@ -23,7 +23,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="FlightTrack">
-    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="apple-touch-icon" href="icon192.png">
 
     <link href="https://unpkg.com/maplibre-gl@4.5.0/dist/maplibre-gl.css" rel="stylesheet" />
 
@@ -36,7 +36,7 @@
             window.addEventListener('load', () => {
                 let newWorker;
 
-                navigator.serviceWorker.register('./sw.js', { scope: '/' })
+                navigator.serviceWorker.register('./sw.js', { scope: "${location.pathname.substring(0, location.pathname.lastIndexOf('/')+1)}" })
                     .then(reg => {
                         console.log('Service Worker Registered Offline: ', reg.scope);
 
