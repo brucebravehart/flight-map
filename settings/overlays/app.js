@@ -28,7 +28,7 @@ async function renderChartList() {
 
     try {
         // 1. Get the list of all stored keys
-        const chartNames = await storage.getAllChartConifgNames();
+        const chartNames = await storage.getAllChartConfigNames();
 
         if (chartNames.length === 0) {
             overlayList.innerHTML = '<li class="loading-state">No overlays created yet. Click above to add your first Overlay.</li>';

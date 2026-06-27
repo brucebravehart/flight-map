@@ -26,9 +26,10 @@ const sliderRotate = document.getElementById('slider-rotate');
 // Initialize MapLibre Engine Instance
 const map = new maplibregl.Map({
     container: 'map',
-    style: 'https://demotiles.maplibre.org/style.json',
-    center: [0, 0],
-    zoom: 2
+    style: 'https://tiles.openfreemap.org/styles/bright',
+    center: [8.541, 47.374], // Zurich
+    zoom: 1,
+    maxTileCacheSize: 50
 });
 
 map.on('load', async () => {
@@ -191,7 +192,7 @@ async function initializeOverlayDisplay() {
             id: LAYER_ID,
             type: 'raster',
             source: SOURCE_ID,
-            paint: { 'raster-opacity': 0.75 }
+            paint: { 'raster-opacity': 0.4 }
         });
 
         isLayerRendered = true;

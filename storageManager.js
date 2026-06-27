@@ -102,7 +102,7 @@ export class StorageManager {
      * Uses a key cursor to optimize performance and conserve active device memory.
      * @returns {Promise<string[]>} List of all stored chart names
      */
-    async getAllChartConifgNames() {
+    async getAllChartConfigNames() {
         return new Promise((resolve, reject) => {
             const transaction = this.db.transaction(['chart_configs'], 'readonly');
             const store = transaction.objectStore('chart_configs');

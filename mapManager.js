@@ -6,7 +6,7 @@ export class MapManager {
             container: containerId,
             style: 'https://tiles.openfreemap.org/styles/bright',
             center: [8.541, 47.374], // Zurich
-            zoom: 14,
+            zoom: 1,
             maxTileCacheSize: 50
         });
 
@@ -177,10 +177,13 @@ export class MapManager {
 
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-        for (const name of this.storage.getAllChartConifgNames()) {
+
+
+        for (const name of await this.storage.getAllChartConfigNames()) {
+            const item = await this.storage.getChartConfig(name)
             try {
 
-                const item = this.storage.getChartConfig(name)
+
                 // 1. Calculate the 4 outer corner GPS coordinates from center, scale, and rotation
                 const finalCoordinates = this._calculateBoundingBox(item.center, item.scale, item.orientation);
 
@@ -207,7 +210,7 @@ export class MapManager {
                 const imageSrcUrl = canvas.toDataURL('image/png');
 
                 // 4. Inject into the MapLibre engine layers
-                const safeId = item.filename.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+                const safeId = item.pdf_name.replace(/[^a-z0-9]/gi, '-').toLowerCase();
                 const sourceId = `src-${safeId}`;
                 const layerId = `lyr-${safeId}`;
 
