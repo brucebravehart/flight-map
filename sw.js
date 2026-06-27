@@ -1,5 +1,5 @@
 const CACHE_NAME = 'flight-tracker-v1';
-const VERSION = '0.0.18'
+const VERSION = '0.0.19'
 // Add all local assets you want instantly available offline
 const REPO_NAME = self.location.pathname.substring(0, location.pathname.lastIndexOf('/') + 1);
 console.log('Repo Name: ' + REPO_NAME)
@@ -19,6 +19,9 @@ const ASSETS_TO_CACHE = [
     `${REPO_NAME}settings/index.html`,
     `${REPO_NAME}settings/style.css`,
     `${REPO_NAME}settings/app.js`,
+    `${REPO_NAME}settings/documents/index.html`,
+    `${REPO_NAME}settings/documents/style.css`,
+    `${REPO_NAME}settings/documents/app.js`,
     // images
     `${REPO_NAME}img/icon192.png`,
     `${REPO_NAME}img/icon512.png`,
