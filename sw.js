@@ -1,5 +1,5 @@
 const CACHE_NAME = 'flight-tracker-v1';
-const VERSION = '0.0.15'
+const VERSION = '0.0.16'
 // Add all local assets you want instantly available offline
 const REPO_NAME = self.location.pathname.substring(0, location.pathname.lastIndexOf('/') + 1);
 console.log('Repo Name: ' + REPO_NAME)
@@ -47,7 +47,7 @@ self.addEventListener('install', (event) => {
         })
 
     );
-    self.skipWaiting();
+    //self.skipWaiting();
 });
 
 // 2. Activate Event: Clean old cache versions safely
