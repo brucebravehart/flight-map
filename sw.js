@@ -26,8 +26,24 @@ const ASSETS_TO_CACHE = [
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
-            return cache.addAll(ASSETS_TO_CACHE);
+            //return cache.addAll(ASSETS_TO_CACHE);
+            console.log("=== STARTING CACHE DEPLOYMENT ===");
+
+            // Loop through each file individually instead of using cache.addAll()
+            for (const url of ASSETS_TO_CACHE) {
+                try {
+                    // Try fetching and caching the asset
+                    await cache.add(url);
+                    console.log(`✅ Cached successfully: ${url}`);
+                } catch (err) {
+                    // This will tell you EXACTLY which file path is breaking your app!
+                    console.error(`❌ CRITICAL BREAK: Failed to cache asset -> "${url}". Make sure this file exists on GitHub and the casing matches perfectly!`, err);
+                }
+            }
+
+            console.log("=== CACHE DEPLOYMENT COMPLETED ===");
         })
+
     );
     self.skipWaiting();
 });
