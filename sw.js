@@ -1,7 +1,7 @@
 const CACHE_NAME = 'flight-tracker-v1';
 const VERSION = '0.0.14'
 // Add all local assets you want instantly available offline
-const REPO_NAME = location.pathname.substring(0, location.pathname.lastIndexOf('/') + 1);
+const REPO_NAME = self.location.pathname.substring(0, location.pathname.lastIndexOf('/') + 1);
 console.log('Repo Name: ' + REPO_NAME)
 
 const ASSETS_TO_CACHE = [
@@ -74,4 +74,13 @@ self.addEventListener('message', (event) => {
             version: VERSION
         });
     }
+});
+
+self.addEventListener('activate', (event) => {
+    event.waitUntil(
+        // Forces the waiting service worker to become the active service worker
+        self.clients.claim().then(() => {
+            console.log('Service Worker successfully claimed all subfolder clients!');
+        })
+    );
 });
