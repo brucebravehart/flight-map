@@ -1,5 +1,5 @@
 const CACHE_NAME = 'flight-tracker-v1';
-const VERSION = '0.0.11'
+const VERSION = '0.0.12'
 // Add all local assets you want instantly available offline
 const ASSETS_TO_CACHE = [
     './index.html',
