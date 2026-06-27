@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Chart Georeferencer</title>
+    <link href="https://unpkg.com/maplibre-gl@4.5.0/dist/maplibre-gl.css" rel="stylesheet" />
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: system-ui, -apple-system, sans-serif;
+            overflow: hidden;
+        }
+
+        #app-container {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+        }
+
+        #control-panel {
+            background: #1e293b;
+            color: white;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            z-index: 10;
+        }
+
+        #status-message {
+            font-weight: 500;
+            color: #38bdf8;
+        }
+
+        #workspace {
+            display: flex;
+            flex: 1;
+            width: 100%;
+            position: relative;
+        }
+
+        .pane {
+            flex: 1;
+            height: 100%;
+            position: relative;
+            outline: 1px solid #cbd5e1;
+        }
+
+        #pdf-wrapper {
+            overflow: auto;
+            background: #64748b;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px;
+        }
+
+        #pdf-container {
+            position: relative;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        canvas {
+            display: block;
+            cursor: crosshair;
+        }
+
+        /* Markers overlaying the PDF canvas and Map */
+        .calibration-marker {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background: #ef4444;
+            border: 2px solid white;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            pointer-events: none;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn {
+            background: #0284c7;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn:disabled {
+            background: #475569;
+            cursor: not-allowed;
+        }
+
+        #file-input {
+            display: none;
+        }
+
+        .file-label {
+            background: #10b981;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="app-container">
+        <div id="control-panel">
+            <label for="file-input" class="file-label">Choose PDF Chart</label>
+            <input type="file" id="file-input" accept="application/pdf" />
+            <div id="status-message">Please upload an aviation PDF chart to begin...</div>
+            <button id="btn-warp" class="btn" disabled>Warp & Map Chart</button>
+        </div>
+
+        <div id="workspace">
+            <div id="pdf-wrapper" class="pane">
+                <div id="pdf-container">
+                    <canvas id="pdf-canvas"></canvas>
+                </div>
+            </div>
+            <div id="map" class="pane"></div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/maplibre-gl@4.5.0/dist/maplibre-gl.js"></script>
+
+    <script>
+        // Setup PDF.js worker
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        // State variables
+        let map;
+        let pdfImageURL = null; // Generated base64/blob version of rendered canvas page
+        let controlPoints = []; // Holds matching coordinate pairs
+        let currentMode = 'pdf'; // Alternates between matching 'pdf' point and 'map' point
+        let imgWidth = 0;
+        let imgHeight = 0;
+
+        const mapMarkers = [];
+
+        // UI Element Hooks
+        const fileInput = document.getElementById('file-input');
+        const statusMessage = document.getElementById('status-message');
+        const pdfCanvas = document.getElementById('pdf-canvas');
+        const pdfContainer = document.getElementById('pdf-container');
+        const btnWarp = document.getElementById('btn-warp');
+
+        // Initialize MapLibre
+        function initMap() {
+            map = new maplibregl.Map({
+                container: 'map',
+                style: 'https://tiles.openfreemap.org/styles/bright',
+                center: [8.541, 47.374], // Default to Zurich region
+                zoom: 9
+            });
+
+            // Map Click Interception
+            map.on('click', (e) => {
+                if (currentMode !== 'map' || controlPoints.length > 4) return;
+
+                // Bind geographic coordinates to the newest pending point
+                const activePoint = controlPoints[controlPoints.length - 1];
+                activePoint.map = { lng: e.lngLat.lng, lat: e.lngLat.lat };
+
+                // Create a permanent map visualization marker
+                const el = document.createElement('div');
+                el.className = 'calibration-marker';
+                el.innerText = controlPoints.length;
+
+                const marker = new maplibregl.Marker({ element: el })
+                    .setLngLat([e.lngLat.lng, e.lngLat.lat])
+                    .addTo(map);
+                mapMarkers.push(marker);
+
+                if (controlPoints.length === 4) {
+                    statusMessage.innerHTML = "🎉 4 points matched! Click 'Warp & Map Chart' to calculate projection.";
+                    btnWarp.disabled = false;
+                    currentMode = 'done';
+                } else {
+                    currentMode = 'pdf';
+                    statusMessage.innerHTML = `Point ${controlPoints.length} matched. Now click <b>Point ${controlPoints.length + 1}</b> on the <b>PDF Chart Image (Left)</b>.`;
+                }
+            });
+        }
+
+        // Handle File Extraction & Canvas Pipeline
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            statusMessage.innerText = "Loading PDF file structure...";
+            resetCalibration();
+
+            const fileReader = new FileReader();
+            fileReader.onload = async function () {
+                const typedarray = new Uint8Array(this.result);
+                try {
+                    const pdf = await pdfjsLib.getDocument(typedarray).promise;
+                    const page = await pdf.getPage(1); // Read Page 1 of chart documentation
+
+                    const viewport = page.getViewport({ scale: 1.5 }); // Target high density crisp display
+                    const ctx = pdfCanvas.getContext('2d');
+                    pdfCanvas.width = viewport.width;
+                    pdfCanvas.height = viewport.height;
+                    imgWidth = viewport.width;
+                    imgHeight = viewport.height;
+
+                    statusMessage.innerText = "Rendering PDF vector components to canvas raster layer...";
+                    await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+
+                    // Convert page drawing layer directly into memory URI string for MapLibre image injection later
+                    pdfImageURL = pdfCanvas.toDataURL('image/png');
+
+                    statusMessage.innerHTML = "🎯 Chart Loaded! Click <b>Point 1</b> on the <b>PDF Chart (Left)</b> representing a known landmark.";
+                    currentMode = 'pdf';
+                } catch (err) {
+                    statusMessage.innerText = "Error parsing PDF: " + err.message;
+                    console.error(err);
+                }
+            };
+            fileReader.readAsArrayBuffer(file);
+        });
+
+        // Track Click on PDF Canvas Image Interface
+        pdfCanvas.addEventListener('click', (e) => {
+            if (currentMode !== 'pdf' || controlPoints.length >= 4) return;
+
+            const rect = pdfCanvas.getBoundingClientRect();
+            // Translate absolute viewport mouse click to scaling relative to canvas coordinate space matrix
+            const canvasX = ((e.clientX - rect.left) / rect.width) * pdfCanvas.width;
+            const canvasY = ((e.clientY - rect.top) / rect.height) * pdfCanvas.height;
+
+            controlPoints.push({
+                image: { x: canvasX, y: canvasY },
+                map: null
+            });
+
+            // Draw interactive UI marker layout overlay point
+            const markerDOM = document.createElement('div');
+            markerDOM.className = 'calibration-marker';
+            markerDOM.style.left = `${(e.clientX - rect.left)}px`;
+            markerDOM.style.top = `${(e.clientY - rect.top)}px`;
+            markerDOM.innerText = controlPoints.length;
+            pdfContainer.appendChild(markerDOM);
+
+            currentMode = 'map';
+            statusMessage.innerHTML = `Point ${controlPoints.length} set on PDF. Now click the <b>EXACT SAME location</b> on the <b>Vector Map (Right)</b>.`;
+        });
+
+        function resetCalibration() {
+            controlPoints = [];
+            currentMode = 'pdf';
+            btnWarp.disabled = true;
+            mapMarkers.forEach(m => m.remove());
+            document.querySelectorAll('#pdf-container .calibration-marker').forEach(el => el.remove());
+            if (map.getLayer('warped-chart-layer')) map.removeLayer('warped-chart-layer');
+            if (map.getSource('user-calibrated-chart')) map.removeSource('user-calibrated-chart');
+        }
+
+        // --- HOMOGRAPHY MATRIX MATH MATRIX CALCULATOR ENGINE ---
+        // Native vanilla Gaussian Elimination matrix transformations implementation
+        function solveGaussian(A, b) {
+            const n = b.length;
+            for (let i = 0; i < n; i++) {
+                // Find pivot element
+                let maxEl = Math.abs(A[i][i]), maxRow = i;
+                for (let k = i + 1; k < n; k++) {
+                    if (Math.abs(A[k][i]) > maxEl) {
+                        maxEl = Math.abs(A[k][i]);
+                        maxRow = k;
+                    }
+                }
+                // Swap rows
+                for (let k = i; k < n; k++) {
+                    let tmp = A[maxRow][k]; A[maxRow][k] = A[i][k]; A[i][k] = tmp;
+                }
+                let tmp = b[maxRow]; b[maxRow] = b[i]; b[i] = tmp;
+
+                // Eliminate current column entries underneath pivot point
+                for (let k = i + 1; k < n; k++) {
+                    let c = -A[k][i] / A[i][i];
+                    for (let j = i; j < n; j++) {
+                        if (i === j) A[k][j] = 0;
+                        else A[k][j] += c * A[i][j];
+                    }
+                    b[k] += c * b[i];
+                }
+            }
+            // Backward substitution processing loop
+            const x = new Array(n).fill(0);
+            for (let i = n - 1; i >= 0; i--) {
+                x[i] = b[i] / A[i][i];
+                for (let k = i - 1; k >= 0; k--) {
+                    b[k] -= A[k][i] * x[i];
+                }
+            }
+            return x;
+        }
+
+        function calculateHomography(pts) {
+            const A = [];
+            const b = [];
+            // Map 4 source points to 4 target coordinate destinations to form an 8 equation matrix linear system
+            for (let i = 0; i < 4; i++) {
+                const srcX = pts[i].image.x;
+                const srcY = pts[i].image.y;
+                const dstX = pts[i].map.lng;
+                const dstY = pts[i].map.lat;
+
+                A.push([srcX, srcY, 1, 0, 0, 0, -srcX * dstX, -srcY * dstX]);
+                b.push(dstX);
+                A.push([0, 0, 0, srcX, srcY, 1, -srcX * dstY, -srcY * dstY]);
+                b.push(dstY);
+            }
+            const h = solveGaussian(A, b);
+            // Returns standard normalized 3x3 Projective Transformation matrix arrays [h0..h8]
+            return [h[0], h[1], h[2], h[3], h[4], h[5], h[6], h[7], 1.0];
+        }
+
+        function applyHomography(H, x, y) {
+            const denominator = H[6] * x + H[7] * y + H[8];
+            const outLng = (H[0] * x + H[1] * y + H[2]) / denominator;
+            const outLat = (H[3] * x + H[4] * y + H[5]) / denominator;
+            return [outLng, outLat];
+        }
+
+        // Calculate homography matrix to project the 4 full edges of image file space bounding coordinates
+        btnWarp.addEventListener('click', () => {
+            statusMessage.innerText = "Computing transformation matrix...";
+
+            const H = calculateHomography(controlPoints);
+
+            // Compute exact 4 corner bounds out in GPS spatial locations mapping [0,0] to bounding scale parameters
+            const topLeft = applyHomography(H, 0, 0);
+            const topRight = applyHomography(H, imgWidth, 0);
+            const bottomRight = applyHomography(H, imgWidth, imgHeight);
+            const bottomLeft = applyHomography(H, 0, imgHeight);
+
+            const finalMappingCoordinates = [topLeft, topRight, bottomRight, bottomLeft];
+
+            // Core requirement: Print output projection bounds to Console
+            console.log("🎯 Extrapolated Image Corners Mapping configuration for MapLibre:", JSON.stringify(finalMappingCoordinates));
+            console.log("Raw 3x3 Projection Homography Matrix Parameters Matrix: ", H);
+
+            // Inject warped source raster dynamically onto MapLibre display view
+            map.addSource('user-calibrated-chart', {
+                type: 'image',
+                url: pdfImageURL,
+                coordinates: finalMappingCoordinates
+            });
+
+            map.addLayer({
+                id: 'warped-chart-layer',
+                type: 'raster',
+                source: 'user-calibrated-chart',
+                paint: { 'raster-opacity': 0.70 } // Transparent blend layer so underlying terrain vectors stick out
+            });
+
+            // Snap view camera into position boundaries bounding box area center locations
+            map.flyTo({ center: topLeft, zoom: 11 });
+            statusMessage.innerText = "🚀 Chart warped onto vector system map background successfully! Details logged to console.";
+        });
+
+        window.onload = initMap;
+    </script>
+</body>
+
+</html>
