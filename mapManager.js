@@ -177,7 +177,7 @@ export class MapManager {
             {
                 filename: 'LS_ADINFO_0000_LSPV_VAC.pdf',
                 center: [7.413839695002798, 47.18153507188695], // [Lng, Lat] center of airport or chart
-                scale: 0.015,                // Bounding box span radius (degrees)
+                scale: 3.0,                // Bounding box span radius (degrees)
                 orientation: 0               // Rotation angle in degrees (Clockwise)
             }
         ];

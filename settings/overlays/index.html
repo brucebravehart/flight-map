@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aviation PWA - Saved Charts</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <header class="overlays-header">
+        <div class="header-left">
+            <a id="back-btn" class="btn-icon" href="../" aria-label="Go back">←</a>
+            <h1>Navigation Charts</h1>
+        </div>
+        <div class="header-actions">
+            <button id="add-overlay-btn" class="btn primary-btn">+ Add New Overlay</button>
+        </div>
+    </header>
+
+    <main class="charts-container">
+        <div id="status-message" class="status-msg hidden"></div>
+
+        <ul id="overlay-list" class="overlay-list">
+            <li class="loading-state">Loading stored overlays...</li>
+        </ul>
+    </main>
+
+    <script type="module" src="app.js"></script>
+</body>
+
+</html>

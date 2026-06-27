@@ -130,8 +130,7 @@ async function handleFileUpload(event) {
  * Trigger Action: Overlay PDF Map Contextual Identifier Hook
  */
 function executeMapOverlayAction(identifier) {
-    console.log(`Executing undefined map matrix adjustment hook for target ID: "${identifier}"`);
-    alert(`Map Overlay triggered for: "${identifier}"\n\n(This fires your undefined action hook.)`);
+    window.location.href = `./../overlays/edit/?pdf=${encodeURIComponent(identifier)}`;
 }
 
 /**
