@@ -1,20 +1,24 @@
 const CACHE_NAME = 'flight-tracker-v1';
 const VERSION = '0.0.12'
 // Add all local assets you want instantly available offline
+const REPO_NAME = location.pathname.substring(0, location.pathname.lastIndexOf('/') + 1);
+console.log('Repo Name: ' + REPO_NAME)
+
 const ASSETS_TO_CACHE = [
-    './index.html',
-    './style.css',
-    './app.js',
-    './mapManager.js',
-    './storageManager.js',
-    './manifest.json',
-    './setup/index.html',
-    './setup/style.css',
-    './setup/app.js',
-    './options/index.html',
+    REPO_NAME, // Caches the base path (github.io/projectname/)
+    `${REPO_NAME}index.html`,
+    `${REPO_NAME}style.css`,
+    `${REPO_NAME}app.js`,
+    `${REPO_NAME}mapManager.js`,
+    `${REPO_NAME}storageManager.js`,
+    `${REPO_NAME}manifest.json`,
+    `${REPO_NAME}setup/index.html`,
+    `${REPO_NAME}setup/style.css`,
+    `${REPO_NAME}setup/app.js`,
+    `${REPO_NAME}options/index.html`,
     // images
-    './img/icon192.png',
-    './img/icon512.png'
+    `${REPO_NAME}img/icon192.png`,
+    `${REPO_NAME}img/icon512.png`
 ];
 
 // 1. Install Event: Cache the App Shell
