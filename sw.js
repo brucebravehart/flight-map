@@ -25,7 +25,7 @@ const ASSETS_TO_CACHE = [
 // 1. Install Event: Cache the App Shell
 self.addEventListener('install', (event) => {
     event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => {
+        caches.open(CACHE_NAME).then(async (cache) => {
             //return cache.addAll(ASSETS_TO_CACHE);
             console.log("=== STARTING CACHE DEPLOYMENT ===");
 
