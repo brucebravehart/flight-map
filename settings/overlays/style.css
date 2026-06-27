@@ -70,12 +70,12 @@ h1 {
   font-size: 0.85rem;
 }
 
-.overlay-btn {
+.edit-btn {
   background-color: #34c759;
   color: white;
 }
 
-.overlay-btn:hover {
+.edit-btn:hover {
   background-color: #28a745;
 }
 

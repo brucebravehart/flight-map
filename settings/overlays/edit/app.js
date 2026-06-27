@@ -3,58 +3,162 @@ import { StorageManager } from './../../../storageManager.js';
 const storage = new StorageManager();
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-// 1. Extract Target Filename from URL params
+// Parse query options out of active environment location string parameters
 const urlParams = new URLSearchParams(window.location.search);
-const targetPdfName = urlParams.get('pdf');
+let targetConfigId = urlParams.get('configId');
+let targetPdfName = urlParams.get('pdf');
 
-// State Variables for Matrix Calculations
-let baseCenter = [0, 0]; // Map center point used as calibration anchor
+// Core Spatial Variables
+let baseCenter = [0, 0];
 let currentScale = 0.015;
 let currentRotation = 0;
-let shiftLat = 0;
-let shiftLng = 0;
+let isLayerRendered = false;
 
 const SOURCE_ID = 'overlay-preview-source';
 const LAYER_ID = 'overlay-preview-layer';
 
-// UI DOM references
+// Interface Selectors
+const pdfSelector = document.getElementById('pdf-selector');
+const pdfDropdownContainer = document.getElementById('pdf-dropdown-container');
 const sliderScale = document.getElementById('slider-scale');
 const sliderRotate = document.getElementById('slider-rotate');
-const sliderLat = document.getElementById('slider-lat');
-const sliderLng = document.getElementById('slider-lng');
 
-// Initialize MapLibre
+// Initialize MapLibre Engine Instance
 const map = new maplibregl.Map({
     container: 'map',
-    style: 'https://demotiles.maplibre.org/style.json', // Replace with your standard style config
+    style: 'https://demotiles.maplibre.org/style.json',
     center: [0, 0],
     zoom: 2
 });
 
 map.on('load', async () => {
-    if (!targetPdfName) {
-        alert("No chart target file specified for calibration.");
-        return;
-    }
-    document.getElementById('target-pdf-display').textContent = targetPdfName;
-
-    // Set base reference position to center screen map coordinates
-    const mapCenter = map.getCenter();
-    baseCenter = [mapCenter.lng, mapCenter.lat];
-
     await storage.init();
-    await initializeImageOverlayPipeline();
+
+    // Generate configId if missing from incoming params
+    if (!targetConfigId) {
+        targetConfigId = `cfg-${Date.now()}`;
+        console.log(`Generated explicit config ID token tracking slot: ${targetConfigId}`);
+    }
+
+    // Try loading config if one was passed
+    await loadExistingConfigData();
+
+    // Populate drop-down list from IndexedDB names
+    await populatePdfSelectorDropdown();
+
+    if (targetPdfName) {
+        // Hide dropdown panel space if target was locked from URL parameter routes
+        pdfDropdownContainer.style.display = 'none';
+        document.getElementById('target-pdf-display').textContent = `Document: ${targetPdfName}`;
+        initializeOverlayDisplay();
+    } else {
+        document.getElementById('target-pdf-display').textContent = "Awaiting document selection...";
+    }
+
+    // Capture dragging and movement to reposition the overlay
+    map.on('move', () => {
+        if (!isLayerRendered) return;
+
+        const mapCenter = map.getCenter();
+        baseCenter = [mapCenter.lng, mapCenter.lat];
+
+        const updatedCorners = computeActiveCorners();
+        const source = map.getSource(SOURCE_ID);
+        if (source) {
+            source.setCoordinates(updatedCorners);
+        }
+    });
 });
 
 /**
- * Builds the PDF bitmap texture string and initializes Maplibre layers
+ * Checks database records to pre-fill layout positions if editing an existing overlay
  */
-async function initializeImageOverlayPipeline() {
-    try {
-        const blob = await storage.getPDF(targetPdfName);
-        if (!blob) throw new Error("Document structure completely missing from local device memory store.");
+async function loadExistingConfigData() {
+    if (!urlParams.get('configId')) return;
 
-        // Convert Blob into canvas image data URL string
+    try {
+        // Query database via transactions safely to find targeted configuration record blocks
+        const tx = storage.db.transaction(['chart_configs'], 'readonly');
+        const store = tx.objectStore('chart_configs');
+
+        return new Promise((resolve) => {
+            const req = store.get(targetConfigId);
+            req.onsuccess = () => {
+                const config = req.result;
+                if (config) {
+                    targetPdfName = config.pdf_name;
+                    baseCenter = config.center;
+                    currentScale = config.scale;
+                    currentRotation = config.orientation;
+
+                    // Sync parameters onto physical UI controller states
+                    sliderScale.value = currentScale;
+                    sliderRotate.value = currentRotation;
+
+                    document.getElementById('val-scale').textContent = currentScale.toFixed(4);
+                    document.getElementById('val-rotate').textContent = `${currentRotation.toFixed(1)}°`;
+
+                    // Center layout immediately over the saved coordinates
+                    map.jumpTo({ center: baseCenter, zoom: 12 });
+                }
+                resolve();
+            };
+            req.onerror = () => resolve();
+        });
+    } catch (err) {
+        console.warn("Could not find configuration matching targetConfigId identifier key string.", err);
+    }
+}
+
+/**
+ * Builds the drop-down elements
+ */
+async function populatePdfSelectorDropdown() {
+    try {
+        const fileNames = await storage.getAllPDFNames();
+        fileNames.forEach(name => {
+            const option = document.createElement('option');
+            option.value = name;
+            option.textContent = name;
+            if (name === targetPdfName) {
+                option.selected = true;
+            }
+            pdfSelector.appendChild(option);
+        });
+
+        // Add context selection monitor hooks
+        pdfSelector.addEventListener('change', (e) => {
+            targetPdfName = e.target.value;
+            if (targetPdfName) {
+                document.getElementById('target-pdf-display').textContent = `Document: ${targetPdfName}`;
+
+                // Set alignment frame onto current map view space center 
+                const currentCenter = map.getCenter();
+                baseCenter = [currentCenter.lng, currentCenter.lat];
+                map.setZoom(12);
+
+                initializeOverlayDisplay();
+            } else {
+                clearActiveMapOverlays();
+            }
+        });
+    } catch (err) {
+        console.error("Error building dashboard drop-down selectors:", err);
+    }
+}
+
+/**
+ * Compiles the selected PDF into an image stream matrix
+ */
+async function initializeOverlayDisplay() {
+    if (!targetPdfName) return;
+
+    try {
+        clearActiveMapOverlays();
+
+        const blob = await storage.getPDF(targetPdfName);
+        if (!blob) throw new Error("Target document binary block payload not present within local database storage partitions.");
+
         const arrayBuffer = await blob.arrayBuffer();
         const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
         const pdf = await loadingTask.promise;
@@ -68,8 +172,12 @@ async function initializeImageOverlayPipeline() {
         await page.render({ canvasContext: ctx, viewport: viewport }).promise;
         const imageSrcUrl = canvas.toDataURL('image/png');
 
-        // Move map viewport focal scope directly onto calibration anchor point
-        map.jumpTo({ center: baseCenter, zoom: 12 });
+        // If baseCenter is uninitialized [0, 0], read center position coordinates out of view matrix context bounds
+        if (baseCenter[0] === 0 && baseCenter[1] === 0) {
+            const currentCenter = map.getCenter();
+            baseCenter = [currentCenter.lng, currentCenter.lat];
+            map.jumpTo({ center: baseCenter, zoom: 12 });
+        }
 
         const initialCorners = computeActiveCorners();
 
@@ -86,53 +194,41 @@ async function initializeImageOverlayPipeline() {
             paint: { 'raster-opacity': 0.75 }
         });
 
-        // Register range input interactive event listeners
+        isLayerRendered = true;
         setupSliderChangeListeners();
 
     } catch (err) {
         console.error(err);
-        alert("Failed to render overlay target asset canvas vector stream.");
+        alert("Pipeline parsing validation failure occurred during vector extraction phases.");
     }
 }
 
 /**
- * Attaches real-time listeners to range fields
+ * Listens to size scales and rotational structural inputs
  */
 function setupSliderChangeListeners() {
     const updatePipeline = () => {
         currentScale = parseFloat(sliderScale.value);
         currentRotation = parseFloat(sliderRotate.value);
-        shiftLat = parseFloat(sliderLat.value);
-        shiftLng = parseFloat(sliderLng.value);
 
-        // Update Text labels
         document.getElementById('val-scale').textContent = currentScale.toFixed(4);
         document.getElementById('val-rotate').textContent = `${currentRotation.toFixed(1)}°`;
-        document.getElementById('val-lat').textContent = shiftLat.toFixed(4);
-        document.getElementById('val-lng').textContent = shiftLng.toFixed(4);
 
-        // Re-compute bounding corners and apply directly to map matrix
         const updatedCorners = computeActiveCorners();
         const source = map.getSource(SOURCE_ID);
         if (source) {
-            source.setCoordinates(updatedCorners); // Warps map on the fly without blinking
+            source.setCoordinates(updatedCorners);
         }
     };
 
     sliderScale.addEventListener('input', updatePipeline);
     sliderRotate.addEventListener('input', updatePipeline);
-    sliderLat.addEventListener('input', updatePipeline);
-    sliderLng.addEventListener('input', updatePipeline);
 }
 
 /**
- * Computes bounding coordinate matrices using base layout anchors + shifts
+ * Standard Coordinate Georeference Corner Calculator
  */
 function computeActiveCorners() {
-    // Add real-time user sliding offsets to original center reference points
-    const finalCenterLng = baseCenter[0] + shiftLng;
-    const finalCenterLat = baseCenter[1] + shiftLat;
-
     const rad = (currentRotation * Math.PI) / 180;
     const localCorners = [
         [-currentScale, currentScale], // Top-Left
@@ -141,37 +237,44 @@ function computeActiveCorners() {
         [-currentScale, -currentScale]  // Bottom-Left
     ];
 
-    const latCorrection = Math.cos((finalCenterLat * Math.PI) / 180);
+    const latCorrection = Math.cos((baseCenter[1] * Math.PI) / 180);
 
     return localCorners.map(([lx, ly]) => {
         const rotatedX = lx * Math.cos(rad) - ly * Math.sin(rad);
         const rotatedY = lx * Math.sin(rad) + ly * Math.cos(rad);
         return [
-            finalCenterLng + (rotatedX / latCorrection),
-            finalCenterLat + rotatedY
+            baseCenter[0] + (rotatedX / latCorrection),
+            baseCenter[1] + rotatedY
         ];
     });
 }
 
-// SAVE BUTTON LOGIC: Persist config parameters directly to IndexedDB Store
-document.getElementById('save-config-btn').addEventListener('click', async () => {
-    const finalCenterLng = baseCenter[0] + shiftLng;
-    const finalCenterLat = baseCenter[1] + shiftLat;
+function clearActiveMapOverlays() {
+    if (map.getLayer(LAYER_ID)) map.removeLayer(LAYER_ID);
+    if (map.getSource(SOURCE_ID)) map.removeSource(SOURCE_ID);
+    isLayerRendered = false;
+}
 
-    // Build unique alphanumeric key identifier string profile configuration record
+// Persist the parameters to IndexedDB
+document.getElementById('save-config-btn').addEventListener('click', async () => {
+    if (!targetPdfName) {
+        alert("Please select a target PDF chart document to complete the map configuration update.");
+        return;
+    }
+
     const configRecord = {
-        configId: `cfg-${Date.now()}`,
+        configId: targetConfigId, // Keeps matching ID string if modifying an existing profile entry
         pdf_name: targetPdfName,
-        center: [finalCenterLng, finalCenterLat],
+        center: [baseCenter[0], baseCenter[1]],
         scale: currentScale,
         orientation: currentRotation
     };
 
     try {
         await storage.saveChartConfig(configRecord);
-        alert(`Overlay profile saved for ${targetPdfName}! Returning to index...`);
-        window.location.href = './index.html';
+
+        window.location.href = '../';
     } catch (err) {
-        alert("Failed to commit settings configuration records to object store.");
+        alert("Failed to write map positioning layout tracking configurations back to IndexedDB system data streams.");
     }
 });

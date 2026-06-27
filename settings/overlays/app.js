@@ -38,15 +38,16 @@ async function renderChartList() {
         // 2. Build rows for each record
         for (const name of chartNames) {
             // Fetch object directly to inspect the actual binary Blob payload length
-            const transaction = storage.db.transaction(['pdf_charts'], 'readonly');
-            const store = transaction.objectStore('pdf_charts');
+            const transaction = storage.db.transaction(['chart_configs'], 'readonly');
+            console.log(transaction)
+            const store = transaction.objectStore('chart_configs');
 
             store.get(name).onsuccess = (event) => {
                 const record = event.target.result;
                 if (!record) return;
 
 
-                createChartRow(record.name, record.configId);
+                createChartRow(record.pdf_name, record.configId);
             };
         }
     } catch (err) {
@@ -59,11 +60,12 @@ async function renderChartList() {
  */
 function createChartRow(name, configId) {
     const li = document.createElement('li');
-    li.className = 'pdf-item';
+    li.className = 'overlay-item';
 
     li.innerHTML = `
         <div class="overlay-info">
-            <div class="overlay-name">${escapeHTML(name)}</div>
+            <div class="overlay-name">${name}</div>
+            <div class="overlay-meta">configId: <strong>${configId}</strong></div>
         </div>
         <div class="overlay-actions">
             <button class="btn action-btn edit-btn" data-action="overlay">Edit</button>
