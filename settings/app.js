@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const updateBtn = document.getElementById('update-btn');
     const updateStatus = document.getElementById('update-status');
     const backBtn = document.getElementById('back-btn');
+    const documentOverviewBtn = document.getElementById('document-overview-btn');
 
     backBtn.addEventListener('click', () => {
         // Option A: Navigate to a explicit fallback route (e.g., your root domain or main index)

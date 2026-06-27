@@ -52,4 +52,49 @@ export class StorageManager {
             request.onerror = () => reject('Error fetching PDF from DB');
         });
     }
+
+    /**
+     * Retrieves an array of strings representing all saved PDF records.
+     * Uses a key cursor to optimize performance and conserve active device memory.
+     * @returns {Promise<string[]>} List of all stored chart names
+     */
+    async getAllPDFNames() {
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction(['pdf_charts'], 'readonly');
+            const store = transaction.objectStore('pdf_charts');
+            const fileNames = [];
+
+            // openKeyCursor reads solely the primary keys ('name'), ignoring the 'blob' payloads
+            const request = store.openKeyCursor();
+
+            request.onsuccess = (event) => {
+                const cursor = event.target.result;
+                if (cursor) {
+                    fileNames.push(cursor.key);
+                    cursor.continue(); // Move to the next index key entry
+                } else {
+                    resolve(fileNames); // End of database records reached
+                }
+            };
+
+            request.onerror = () => reject('Error scanning PDF chart library indices');
+        });
+    }
+
+    /**
+     * Deletes a specific PDF record from the object store by its name identifier.
+     * @param {string} name - The key identifier of the PDF chart to remove
+     * @returns {Promise<void>}
+     */
+    async deletePDF(name) {
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction(['pdf_charts'], 'readwrite');
+            const store = transaction.objectStore('pdf_charts');
+
+            const request = store.delete(name);
+
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(`Failed to delete PDF chart: ${name}`);
+        });
+    }
 }
