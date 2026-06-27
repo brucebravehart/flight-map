@@ -16,7 +16,9 @@ const ASSETS_TO_CACHE = [
     `${REPO_NAME}setup/index.html`,
     `${REPO_NAME}setup/style.css`,
     `${REPO_NAME}setup/app.js`,
-    `${REPO_NAME}options/index.html`,
+    `${REPO_NAME}settings/index.html`,
+    `${REPO_NAME}settings/style.css`,
+    `${REPO_NAME}settings/app.js`,
     // images
     `${REPO_NAME}img/icon192.png`,
     `${REPO_NAME}img/icon512.png`
