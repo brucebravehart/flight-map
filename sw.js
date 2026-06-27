@@ -1,5 +1,5 @@
 const CACHE_NAME = 'flight-tracker-v1';
-const VERSION = '0.0.13'
+const VERSION = '0.0.14'
 // Add all local assets you want instantly available offline
 const REPO_NAME = location.pathname.substring(0, location.pathname.lastIndexOf('/') + 1);
 console.log('Repo Name: ' + REPO_NAME)
@@ -62,5 +62,16 @@ self.addEventListener('fetch', (event) => {
 self.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'SKIP_WAITING') {
         self.skipWaiting();
+    }
+});
+
+self.addEventListener('message', (event) => {
+    // Check if the page is asking for the constant
+    if (event.data && event.data.type === 'GET_VERSION') {
+        // Send the data back to the specific tab/page that asked for it
+        event.ports[0].postMessage({
+            status: 'success',
+            version: VERSION
+        });
     }
 });

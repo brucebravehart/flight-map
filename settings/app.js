@@ -1,3 +1,31 @@
+function getConstantFromServiceWorker() {
+    return new Promise((resolve, reject) => {
+        if (!('serviceWorker' in navigator) || !navigator.serviceWorker.controller) {
+            reject('No active Service Worker controlling this page.');
+            return;
+        }
+
+        // 1. Create a temporary message channel for the reply
+        const messageChannel = new MessageChannel();
+
+        // 2. Set up the listener for the reply from the Service Worker
+        messageChannel.port1.onmessage = (event) => {
+            if (event.data && event.data.status === 'success') {
+                resolve(event.data.version); // Resolves with the constant value
+            } else {
+                reject('Failed to retrieve constant.');
+            }
+        };
+
+        // 3. Send the request down to the active service worker
+        // We pass the second port along so the SW knows how to reply
+        navigator.serviceWorker.controller.postMessage(
+            { type: 'GET_VERSION' },
+            [messageChannel.port2]
+        );
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const updateBtn = document.getElementById('update-btn');
     const updateStatus = document.getElementById('update-status');
@@ -61,7 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if ('serviceWorker' in navigator) {
                 try {
-                    const reg = await navigator.serviceWorker.getRegistration();
+                    const reg = await navigator.serviceWorker.ready;
                     if (reg) {
                         // Force the service worker to fetch the server's manifest/sw file
                         await reg.update();
@@ -74,7 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             }
                         }, 1000);
                     } else {
-                        updateStatus.textContent = "PWA is not currently active.";
+                        updateStatus.textContent = "PWA is not currently active." + "Version: " + await getConstantFromServiceWorker();
                         updateBtn.disabled = false;
                     }
                 } catch (err) {
