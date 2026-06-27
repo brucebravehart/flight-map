@@ -106,3 +106,41 @@ button {
 .btn-secondary:hover {
   background-color: var(--secondary-hover);
 }
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+/* Overriding the default h1 margin since it's now inside a flex container */
+.settings-header h1 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.btn-icon {
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  font-weight: bold;
+  color: var(--text-main);
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background-color 0.2s,
+    transform 0.1s;
+}
+
+.btn-icon:hover {
+  background-color: var(--secondary-color);
+}
+
+.btn-icon:active {
+  transform: scale(0.95);
+}
